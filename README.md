@@ -45,39 +45,55 @@ npm run typecheck
 npm test
 ```
 
+## Interface and safety model
+
+The tool is **hybrid**: one shared core (`src/core.ts`) with two thin adapters.
+Both adapters use the same input checks, result statuses, and report renderer.
+The only difference is the validation policy each one passes explicitly:
+
+| Interface | Caller | Validation commands |
+|---|---|---|
+| CLI | A developer in their own shell | Runs any `--validate` command they type |
+| MCP | An AI agent (inputs may be shaped by untrusted content) | Read-only by default; runs only exact matches of `INSPECTOR_VALIDATION_ALLOWLIST` |
+
+The core defaults to read-only, so a new adapter cannot run commands unless it
+opts in.
+
+Note: even an allowlisted command such as `npm test` runs scripts defined by the
+reviewed repository. Only allowlist commands for repositories you trust.
+
 ## CLI
 
 ```bash
-npm run inspector -- review --repo ./path/to/repo --format markdown
-npm run inspector -- review --repo ./path/to/repo --validate "npm test"
+npm run inspector -- review --repo ./path/to/repo
+npm run inspector -- review --repo ./path/to/repo --base-ref master --validate "npm test"
 ```
 
-The report is written to `review-report.md`.
+- `--repo` (required): path to a local Git repository
+- `--base-ref` (optional, default `main`): compared as `base_ref...HEAD`; must exist and must not start with `-`
+- `--validate` (repeatable): command to run in the repository
+- `--format`: only `markdown` is supported
+
+The report is written to `review-report.md` in the directory npm runs from (the package root).
 
 ## MCP
-
-Start the stdio server with:
 
 ```bash
 npm run mcp-server
 ```
 
-It exposes a `review_repository` tool. Inspect the implementation to determine
-its current input contract and whether it is suitable for the production model
-you propose.
+Tool `review_repository`:
 
-## Project layout
+- `repo_path` (string, required): path to a local Git repository
+- `base_ref` (string, optional, default `main`)
+- `validation_commands` (string[], optional): executed only if they exactly match the allowlist; otherwise reported as `SKIPPED`
 
-```text
-src/core.ts         shared review orchestration
-src/cli.ts          command-line adapter
-src/mcp-server.ts   MCP adapter
-src/git.ts          Git inspection
-src/validation.ts   validation execution
-src/report.ts       Markdown report generation
-test/               public starter tests
-```
+To allow validation, set a comma-separated list of exact commands in the MCP
+server's environment, for example `INSPECTOR_VALIDATION_ALLOWLIST=npm test,npm run typecheck`.
 
-When finished, submit via **Security → Report a vulnerability** on this
-repo — see `SECURITY.md` for exactly what to include. Do not reply by email;
-that submission channel is not monitored.
+Errors (missing repo, unknown or invalid ref) are returned as `isError` results.
+
+## Report
+
+Each validation shows `PASSED`, `FAILED` (with exit code), or `SKIPPED`.
+Commands time out after 120s. Output is capped at 8000 characters, keeping the end.
