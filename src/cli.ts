@@ -15,7 +15,7 @@ function parseArgs(argv: string[]): Args {
   for (let index = 1; index < argv.length; index++) {
     const token = argv[index];
     if (token === "--repo") {
-      args.repositoryPath = argv[++index]?.split(" ")[0];
+      args.repositoryPath = argv[++index];
     } else if (token === "--base-ref") {
       args.baseRef = argv[++index];
     } else if (token === "--format") {
@@ -30,7 +30,14 @@ function parseArgs(argv: string[]): Args {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.command !== "review" || !args.repositoryPath) {
-    console.error("Usage: inspector review --repo <path> [--base-ref <ref>] [--validate <command>]");
+    console.error(
+      "Usage: inspector review --repo <path> [--base-ref <ref>] [--validate <command>]... [--format markdown]",
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (args.format && args.format !== "markdown") {
+    console.error(`Unsupported --format "${args.format}". Only "markdown" is currently supported.`);
     process.exitCode = 1;
     return;
   }
@@ -40,13 +47,12 @@ async function main() {
     baseRef: args.baseRef,
     validationCommands: args.validations,
     validationPolicy: { kind: "any" },
-    format: args.format,
   });
   writeFileSync("review-report.md", report, "utf8");
   console.log("Review report written to review-report.md");
 }
 
 main().catch((error) => {
-  console.error("Fatal error:", error);
+  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 });
