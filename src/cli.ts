@@ -39,6 +39,7 @@ async function main() {
     repositoryPath: args.repositoryPath,
     baseRef: args.baseRef,
     validationCommands: args.validations,
+    validationPolicy: { kind: "any" },
     format: args.format,
   });
   writeFileSync("review-report.md", report, "utf8");

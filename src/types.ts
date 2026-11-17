@@ -10,9 +10,14 @@ export type ValidationResult = {
   output: string;
 };
 
+export type ValidationPolicy =
+  | { kind: "any" }                            // trusted caller
+  | { kind: "allowlist"; commands: string[] }; // untrusted caller
+
 export type ReviewRequest = {
   repositoryPath: string;
   baseRef?: string;
   validationCommands?: string[];
+  validationPolicy?: ValidationPolicy;
   format?: "markdown" | "json";
 };

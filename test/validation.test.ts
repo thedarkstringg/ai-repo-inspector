@@ -45,6 +45,7 @@ describe("reviewRepository with a failing validation", () => {
     const report = await reviewRepository({
       repositoryPath: repo,
       validationCommands: [`node -e "process.exit(1)"`],
+      validationPolicy: { kind: "any" },
     });
     expect(report).toContain("FAILED");
     expect(report).toContain("new-file.ts");
