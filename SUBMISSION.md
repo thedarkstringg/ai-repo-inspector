@@ -106,7 +106,9 @@ and both contracts.
 I used Claude as a pair and reviewer. It helped me analyze the code, rank the
 issues, and draft code and tests. I ran every command myself and reviewed each
 change before committing. For every fix I wrote the test first, watched it fail
-against the original code, then confirmed it passed after the fix.
+against the original code, then confirmed it passed after the fix.The policy tests
+were written together with the change, and the CLI fixes were verified
+manually before and after.
 
 ## Where did you check, correct, or reject an AI suggestion? (required)
 
@@ -118,7 +120,7 @@ against the original code, then confirmed it passed after the fix.
   `core.autocrlf=false`.
 - **Handler signature:** I rejected passing the policy as a second handler
   parameter. The MCP SDK calls handlers as `(args, extra)`, so a second
-  parameter would silently receive `extra`. I used a handler factory instead.
+  parameter would silently receive `extra`. I used a handler factory instead. Verified in the SDK's type definitions: `BaseToolCallback` is `(args, extra) => ...` in `@modelcontextprotocol/sdk/dist/esm/server/mcp.d.ts`.
 - **Integration mistake caught by typecheck:** while applying a change I left a
   duplicate `ReviewRequest` type and dropped the SDK imports. Vitest still
   passed 10/11 while `tsc` reported 7 errors. Vitest does not typecheck, so
@@ -129,10 +131,10 @@ against the original code, then confirmed it passed after the fix.
 
 ## Commands used to verify the result, with outcomes
 
+
 - `npm run typecheck`: clean.
 - `npm run build`: clean.
-- `npm test`: 15/15 passing. Each new test file was run red against the original
-  code first.
+- `npm test`: 15/15 passing. The MCP contract, validation, and git tests were run red against the original code first.
 - `npm run inspector -- review --repo . --validate "exit 1"`: before, a
   `Fatal error` crash; after, the report shows `exit 1 (FAILED, exit 1)`.
 - `npm run inspector -- review --repo . --base-ref "--output=pwned.txt"`:
